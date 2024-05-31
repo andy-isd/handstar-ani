@@ -29,8 +29,23 @@ var BgSeq = function BgSeq(p) {
     };
 
     self.item_on_frame = function(data) {
-        data.frame++;
-        if(data.frame > data.max) data.frame = 0;
+        if(data.el.getAttribute('pause') == "1") return;
+        data.direction = (data.el.getAttribute('reverse') == "1") ? -1 : 1;
+        data.frame += data.direction;
+        if(data.frame > data.max) {
+            if(data.el.getAttribute('playonce') == '1') {
+                data.el.setAttribute('pause', '1');
+                return;
+            }
+            data.frame = 0;
+        }
+        if(data.frame < 0) {
+            if(data.el.getAttribute('playonce') == '1') {
+                data.el.setAttribute('pause', '1');
+                return;
+            }
+            data.frame = data.max;
+        }
         var path = data.path.replace(data.replacement, String(data.frame).padStart(data.pad, '0'));
         data.el.style.backgroundImage = "url(" + path + ")";
     };
@@ -43,15 +58,17 @@ var BgSeq = function BgSeq(p) {
         var data = {
             id: self.items,
             el: el,
-            replacement: "{XX}",
+            replacement: "{" + "".padStart(max.toString().length, "X") + "}",
             path: path,
             pad: max.length,
             min: 0,
             max: max,
             frame: 0,
+            direction: 1,
             preload: [],
             preloaded: 0
         }
+        console.log(data.replacement)
         for(var i = data.min; i <= data.max; i++) {
             data.preload[i] = new Image();
             data.preload[i].onload = function() {
@@ -61,11 +78,12 @@ var BgSeq = function BgSeq(p) {
                     setInterval(self.item_on_frame, 1000/25, data);
                 }
                 else {
-                    console.log("preloaded " + data.preloaded)
+                    //console.log("preloaded " + data.preloaded)
                 }
             };
             data.preload[i].src = path.replace(data.replacement, String(i).padStart(data.pad, '0'));
         }
+        return data.id;
     };
 
     self.init = function(p) {
